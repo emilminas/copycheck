@@ -67,7 +67,6 @@ def to_list(text):
     ['\tHello', 'world\n\n!']
     """
     words = re.split(' +|([\t\n\r\f\v]+)', text)      # Splits text.
-    # return re.split(' ', text)
     return [word for word in words if word]           # Filters out None and empty elements.
 
 
@@ -353,12 +352,12 @@ if __name__ == "__main__":
             reference_out = reference_in
             sample_out = sample_in
 
-        print(f'\n\n*** Matching sequences in the reference text are highlighted yellow. \n\n{post_process_text(reference_out)}')
+        print(f'\n\n*** Matching sequences in the reference text are highlighted yellow. \n\n{reference_out}')
 
         print(f'\n\n*** Matching sequences in the sample text are highlighted magenta.')
         if find_quotes:
             print(f'Quoted sequences are highlighted cyan.')
-        print(f'\n\n{post_process_text(sample_out)}')
+        print(f'\n\n{sample_out}')
 
         print(f'\n\n*** The sample documents contains {word_count} words, '
               f'which is {round(word_count / len(reference_in.split()) * 100, 2)}% of the reference.\n\n')
