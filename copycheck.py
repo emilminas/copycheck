@@ -198,9 +198,8 @@ def match_verbatim(reference, sample, frame_size):
      A pair of A Boolean NumPy arrays acting as masks to identify matching sequences of tokens
      between the reference and sample texts.
      """
-    # reference_tokens, sample_tokens = to_list(reference), to_list(sample)  # Input texts to strings of words.
-    reference_nums, sample_nums = [], []
-    word2num = {}
+    reference_nums, sample_nums = [], []            # These will become the int array representations of the texts.
+    word2num = {}                                   # This dictionary will store the unique int value of each word type.
 
     for index, token in enumerate(reference):
         word = re.sub(r'\W', '', token.lower())     # Gets the normalized form of each word.

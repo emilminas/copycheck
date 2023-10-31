@@ -15,49 +15,216 @@ The following is a step-by-step description of the copycheck process:
 1. The reference and sample documents are read on-line as input strings and processed to normalize potential variations in punctuation.
 2. The strings are tokenized in a fashion that preserves formatting such as newline characters.
 3. Each unique word (type) is assigned an integer value in a dictionary, which is used to convert each string into an array of integers.
-4. The sample and reference arrays are restructured into overlapping sliding frames of indices, e.g. given a frame size of 11 we get the original arrays at indices  
-   [[0, 1, ..., 10, 11]  
-   [1, 2, ..., 11, 12]  
-   ...  
-   [n-11, n-10, ..., n-1, n]].
+4. The sample and reference arrays are restructured into overlapping sliding frames of indices. Suppose our 'document' is an array of the alphabet from 'a' to 'z'.
+    ```python
+    ['a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z']
+    ```
    
-   However, each sample frame is compared to all reference frames. Let's introduce a simple example to illustrate this. We want to compare
-   - reference: "The fog of San Francisco"
-   - sample: "Hedgehog and the Fog"
+    The indices of the document will be the following.
+    ```python
+    [ 0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25]
+    ```
+   
+    Now given a frame size of 11 we create frames of sliding indices from 0 to 25.   
+   ```python
+    [[ 0  1  2  3  4  5  6  7  8  9 10]
+     [ 1  2  3  4  5  6  7  8  9 10 11]
+     [ 2  3  4  5  6  7  8  9 10 11 12]
+     [ 3  4  5  6  7  8  9 10 11 12 13]
+     [ 4  5  6  7  8  9 10 11 12 13 14]
+     [ 5  6  7  8  9 10 11 12 13 14 15]
+     [ 6  7  8  9 10 11 12 13 14 15 16]
+     [ 7  8  9 10 11 12 13 14 15 16 17]
+     [ 8  9 10 11 12 13 14 15 16 17 18]
+     [ 9 10 11 12 13 14 15 16 17 18 19]
+     [10 11 12 13 14 15 16 17 18 19 20]
+     [11 12 13 14 15 16 17 18 19 20 21]
+     [12 13 14 15 16 17 18 19 20 21 22]
+     [13 14 15 16 17 18 19 20 21 22 23]
+     [14 15 16 17 18 19 20 21 22 23 24]
+     [15 16 17 18 19 20 21 22 23 24 25]]
+    ```
+   
+   The document corresponding to the indices above become the following.
+    ```python
+    [['a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k']
+     ['b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l']
+     ['c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm']
+     ['d' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n']
+     ['e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o']
+     ['f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p']
+     ['g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q']
+     ['h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r']
+     ['i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's']
+     ['j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't']
+     ['k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 'u']
+     ['l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v']
+     ['m' 'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w']
+     ['n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x']
+     ['o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y']
+     ['p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z']]
+    ```
+    
+5. Each sample frame must be compared to all reference frames. Let's introduce a simple example to illustrate this. We want to compare
+    ```python
+    reference = "The fog of San Francisco"
+    sample = "Hedgehog and the Fog"
+    ```
      
-   Converting them to integers in the order each new unique word is encountered we get
-   - reference: [0 1 2 3 4]
-   - sample: [5 6 0 1]
+    Using a dictionary that stores each unique word (type) at the index first encountered, we can convert a list of strings to a list of integers. Let's call this function 'word2num'.  
+    - Note: any word that exists in the sample document, but not the reference document, will be arbitrarily assigned -1, since there is no chance for it to be in a match sequence.
+    
+    ```python
+    >>> word2num(reference)
+    [0, 1, 2, 3, 4]
+   
+    >>> word2num(sample)
+    [-1, -1, 0, 1]
+    ```
 
-   Now let's say we want to match 2-work sequences, so a frame size of two. That means that we have to compare
-   - [5 6] with [[0 1]
-                 [1 2]
-                 [2 3]
-                 [3 4]]
-   - [6 0] with [[0 1]
-                 [1 2]
-                 [2 3]
-                 [3 4]]
-   - [0 1] with [[0 1]
-                 [1 2]
-                 [2 3]
-                 [3 4]]
+    Now let's say we want to match 2-work sequences, so a frame size of two. We create the sliding frames discussed above to achieve the following. 
+    ```python
+    >>> reference_frames
+    [[0 1]
+     [1 2]
+     [2 3]
+     [3 4]]
+   
+    >>> sample_frames
+    [[-1 -1]
+     [-1  0]
+     [ 0  1]]
+    ```
      
-   To achieve this efficiently, we need to move to the 3rd dimension by stacking each of the three frames listed directly above on top of each other to form a cube, so we actually     compare everything at once!
-   - [  [ [5 6] ]      
-        [ [6 0] ]           
-        [ [0 1] ] ]        
-     with  
-     [ [ [0 1][1 2][2 3][3 4] ]  
-       [ [0 1][1 2][2 3][3 4] ]  
-       [ [0 1][1 2][2 3][3 4] ] ]
+    But remember, each reference frame must be compared to every sample frame.
+    ```python
+   # FRAME 0: 
+   # Does [-1 -1] = [[0 1], [1 2], [2 3], [3 4]]?
+    >>> sample_frames[0] == reference_frames
+    [[False, False],
+     [False, False],
+     [False, False],
+     [False, False]]
+   
+   # FRAME 1:
+   # Does [-1  0] = [[0 1], [1 2], [2 3], [3 4]]?
+    >>> sample_frames[1] == reference_frames
+    [[False, False],
+     [False, False],
+     [False, False],
+     [False, False]]
+   
+   # FRAME 2:
+   # Does [ 0  1] = [[0 1], [1 2], [2 3], [3 4]]?
+    >>> sample_frames[2] == reference_frames
+    [[ True,  True],
+     [False, False],
+     [False, False],
+     [False, False]]
+    ```
+    
+    To achieve this efficiently, we need to move to the 3rd dimension by stacking each of the three frames (listed above) on top of each other to form a cube, so we actually compare everything at once!
+
+    ```python
+    >>> sample_frames
+    [[[-1, -1]],
+
+     [[-1,  0]],
+
+     [[ 0,  1]]]
+   
+   >>> reference_frames
+    [[[0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4]],
+
+     [[0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4]],
+
+     [[0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4]]]
+   
+   # One comparison yields the same result as three separate comparisons
+   # in the window above stacked on each other. 
+   >>> matches = reference_frames == sample_frames
+   >>> matches
+   [[[False, False],
+      [False, False],
+      [False, False],
+      [False, False]],
+
+     [[False, False],
+      [False, False],
+      [False, False],
+      [False, False]],
+
+     [[ True,  True],
+      [False, False],
+      [False, False],
+      [False, False]]]
+   
+   # Bring the match tensor back down to 2D space by evaluating each Boolean pair. 
+   # Now the horizontal axis shows which word pair is a match in the reference,
+   # the vertical axis show which pair is a match in the sample. 
+   >>> matches.all(2)
+   [[False, False, False, False],
+     [False, False, False, False],
+     [ True, False, False, False]]
+    ```
      
-   Finally, by comparing the two cubes along their 3rd dimensions and convulving the comparison we attain a Boolean mask array for the reference and a Boolean mask array for the sample that is True for each match token. For our example, we would create:
-   - reference: [True True False False False]
-   - sample: [False False True True]
-6. These masks are imposed on the original tokenized documents and color-coded (formatted to change the background color of the text) if a token is matched with True.
+   Finally, by using the convolve function on the match matrix along the horizontal and vertical axes,
+   we attain a Boolean mask array for the reference and a Boolean mask array for the sample, respectively, that is True for each match token.
+   ```python
+   # A 1D Boolean array corresponding to the length of the reference doc. 
+   >>> reference_mask = np.convolve(matches.any(0), np.ones((frame_size), dtype=int))
+   >>> reference_mask
+   [1, 1, 0, 0, 0]
+   >>> reference_mask = reference_mask > 0
+   >>> reference_mask
+   [ True,  True, False, False, False]
+   >>> reference 
+   'The fog of San Francisco'
+   
+   # A 1D Boolean array corresponding to the length of the sample doc.
+   >>> sample_mask = np.convolve(matches.any(1), np.ones((frame_size), dtype=int)) 
+   >>> sample_mask
+   [0, 0, 1, 1]
+   >>> sample_mask = sample_mask > 0
+   >>> sample_mask
+   [False, False,  True,  True]
+   >>> sample
+   'Hedgehog and the Fog'
+   ```
+   As you can see, each mask evaluates True in the postion of the sequence "the fog".
+
+6. These masks are imposed on the original tokenized documents and color-coded (formatted to change the background color of the text) if a token is paired with True.
 7. Matches that are in quotation marks are optionally color-coded.
 8. The module finally prints a formatted version of the reference and sample documents that highlights matching sequences:
+
+## Instructions 
+This code is meant to be run in a command terminal.
+
+1. Pull the code.
+2. Use chmod to be able to execute the program. 
+```shell
+chmod +x copycheck.py
+```
+3. Execute the program
+```shell
+./copycheck.py 
+
+***Enter the reference text. Ctrl-D (Mac) or Ctrl-Z (Windows) to save it.***
+```
+4. Enter all requited inputs. The outputs highlight matching sequences. 
+![](sample.png)
+
+5. Here is an example displaying optional color-coding for quoted matched. 
+![](quote_sample.png)
 
 ## Roadmap
 There are three categories of improvement that should be implemented.
