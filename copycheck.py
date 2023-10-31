@@ -12,7 +12,7 @@ Method:
 5. Optionally color code verbatim sequences that are quoted.
 ------
 Created by Emil Minas
-October 10, 2023
+October 30, 2023
 """
 import re
 import numpy as np
