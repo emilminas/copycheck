@@ -215,7 +215,10 @@ The following is a step-by-step description of the copycheck process:
 ## Instructions 
 This code is meant to be run in command terminal.
 
-1. Pull the code.
+1. Get the code.
+```shell
+git clone https://github.com/emilminas/copycheck.git
+```
 2. Use chmod to be able to execute the program. 
 ```shell
 chmod +x copycheck.py
