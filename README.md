@@ -2,13 +2,19 @@
 Copycheck is a module that identifies matching sequences of tokens between two strings. 
 
 ## Description
-This module was created to address the need to match a verbatim sequence of words that would constitute a copyright violation. Throughout the module, the original document is referred to as the *reference* and the document generated from the reference is called the *sample*. Let's first assume that there is a minimum threshold for the length of a match sequence to constitute plagiarism or a copyright violation, e.g. >10 words. In order to determine this manually, we would have to select words 0-11 from the sample and "control-F" it in the reference. We would then have to shift over one word, now selecting words 1-12, and perform the search again, continuing until we reach words n-11 to n. Copycheck automates this operation by handling it as a pattern-matching problem (very similar to image recognition). 
+This module was created to address the need to match a verbatim sequence of words that would constitute a copyright violation. 
+Throughout the module, the original document is referred to as the *reference* and the document citing the reference as a source is called the *sample*. 
+Let's first assume that there is a minimum threshold for the length of a match sequence to constitute plagiarism or a copyright violation, e.g. >10 words. Let's call this the *frame size*. 
+In order to determine this manually, we would have to select words 0-10 from the sample and "control-F" it in the reference. 
+We would then have to shift over one word, now selecting words 1-11, and perform the search again, continuing until we reach words n-11 to n. 
+Copycheck automates this operation by handling it as a pattern-matching problem -- similar to image recognition. 
 
-One of the main considerations in implementing a pattern matcher was minimizing the:
+The main considerations in implementing such a pattern matcher was minimizing the:
 - number of libraries that would have to be imported, and
-- complexity of the operation.
+- computational complexity of the operation.
   
-This was achieved by leveraging vectorized operations in NumPy arrays. Accepting the computational overhead of converting strings to NumPy integer arrays and performing regex-based text processing, unnecessary, repetitive, or loopy operations are avoided down the line. 
+This was achieved by leveraging vectorized operations in NumPy arrays. 
+Accepting the computational overhead of converting strings to NumPy integer arrays and performing regex-based text processing, unnecessary, repetitive, or loopy operations are avoided down the line. 
 
 ## Pipeline
 The following is a step-by-step description of the copycheck process:
