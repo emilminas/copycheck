@@ -81,10 +81,10 @@ The following is a step-by-step description of the copycheck process:
     - Note: any word that exists in the sample document, but not the reference document, will be arbitrarily assigned -1, since there is no chance for it to be in a match sequence.
     
     ```python
-    >>> word2num(reference)
+    >>> word2num(reference.split())
     [0, 1, 2, 3, 4]
    
-    >>> word2num(sample)
+    >>> word2num(sample.split())
     [-1, -1, 0, 1]
     ```
 
