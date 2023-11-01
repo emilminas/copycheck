@@ -64,7 +64,6 @@ def to_list(text):
     ------
     A list of words split by whitespace, while preserving other formatting,
     e.g. "\tHello world\n\n!" --> ['\t', 'Hello', 'world', '\n\n', '!']
-    ['\tHello', 'world\n\n!']
     """
     words = re.split(' +|([\t\n\r\f\v]+)', text)      # Splits text.
     return [word for word in words if word]           # Filters out None and empty elements.
@@ -188,10 +187,6 @@ def match_verbatim(reference, sample, frame_size):
      reference          : input str list  -- the reference text tokenized
      sample             : input str list  -- the sample text tokenized
      frame_size         : input integer   -- the minimum threshold for matching consecutive words
-     find_quotes        : input boolean   -- determine if quoted matches should be identified
-     reference_color    : input string    -- color coded reference matches
-     sample_color       : input string    -- color coded sample matches
-     quote_color        : input string    -- color coded quote matches
 
      Output
      ------
@@ -345,17 +340,29 @@ if __name__ == "__main__":
         quotes = input()
         find_quotes = False if quotes == 'n' else True
 
+        print("\n\n***What color scheme do you want?***\n"
+              "Options: cmyk or rbg. Default: cmyk\n")
+        colors = input()
+        if colors == "rbg":
+            reference_color = "green"
+            sample_color = "red"
+            quote_color = "blue"
+        else:
+            reference_color = "yellow"
+            sample_color = "magenta"
+            quote_color = "cyan"
+
         reference_out, sample_out = format_text(reference_in, sample_in, frame_size, find_quotes,
-                                                "yellow", "magenta", "cyan")
+                                                reference_color, sample_color, "cyan")
         if not reference_out or not sample_out:
             reference_out = reference_in
             sample_out = sample_in
 
-        print(f'\n\n*** Matching sequences in the reference text are highlighted yellow. \n\n{reference_out}')
+        print(f'\n\n*** Matching sequences in the reference text are highlighted {reference_color}. \n\n{reference_out}')
 
-        print(f'\n\n*** Matching sequences in the sample text are highlighted magenta.')
+        print(f'\n\n*** Matching sequences in the sample text are highlighted {sample_color}.')
         if find_quotes:
-            print(f'Quoted sequences are highlighted cyan.')
+            print(f'Quoted sequences are highlighted {quote_color}.')
         print(f'\n\n{sample_out}')
 
         print(f'\n\n*** The sample document contains {word_count} words, '
