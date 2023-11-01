@@ -236,7 +236,7 @@ chmod +x copycheck.py
 There are three categories of improvement that should be implemented.
 1. Further testing and refinement of the existing code.
 2. Implementation of named entity recognition (NER) to identify proper nouns in matched sequences. This can be very simply done with NLTK or spaCy, which (I think) uses HMM-based tagging. However, if additional libraries are to be avoided, it is possible to implement a very rudimentary/naive NER leveraging English language capitalization rules with regex. I'm actually in the process of smoothing out a simple regex-based solution, which obviously won't be as good as NLTK, but it's a "quick and dirty" solution. 
-3. A frontend should be developed to make the code more user-friendly.
+3. A front end should be developed to make the code more user-friendly. The ability to customize highlighter color, maybe via a color wheel, should be added. There could also be an added match word counter, saving the user from having to count words in a visually highlighted sequence. 
 
 ## Final thoughts
 I welcome any suggestions on how to improve this code. I welcome pull requests. For major changes or any use of my code for other purposes, please open an issue or contact me. 
