@@ -223,8 +223,6 @@ chmod +x copycheck.py
 3. Execute the program
 ```shell
 ./copycheck.py 
-
-***Enter the reference text. Ctrl-D (Mac) or Ctrl-Z (Windows) to save it.***
 ```
 4. Enter all requited inputs. The outputs highlight matching sequences. 
 ![](example1.png)
