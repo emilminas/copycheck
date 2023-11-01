@@ -82,7 +82,7 @@ The following is a step-by-step description of the copycheck process:
     [-1, -1, 0, 1]
     ```
 
-    Now let's say we want to match 2-work sequences, so a frame size of two. We create the sliding frames discussed above to achieve the following. 
+    Now let's say we want to match 2-word sequences, so a frame size of two. We create the sliding frames discussed above to achieve the following. 
     ```python
     >>> reference_frames
     [[0 1]
@@ -96,7 +96,7 @@ The following is a step-by-step description of the copycheck process:
      [ 0  1]]
     ```
      
-    But remember, each reference frame must be compared to every sample frame.
+    But remember, each sample frame must be compared to every reference frame.
     ```python
    # FRAME 0: 
    # Does [-1 -1] = [[0 1], [1 2], [2 3], [3 4]]?
@@ -178,7 +178,7 @@ The following is a step-by-step description of the copycheck process:
     ```
      
    Finally, by using the convolve function on the match matrix along the horizontal and vertical axes,
-   we attain a Boolean mask array for the reference and a Boolean mask array for the sample, respectively, that is True for each match token.
+   we attain a Boolean mask array for the reference and a Boolean mask array for the sample, respectively. These evaluate True for each match token.
    ```python
    # A 1D Boolean array corresponding to the length of the reference doc. 
    >>> reference_mask = np.convolve(matches.any(0), np.ones((frame_size), dtype=int))
@@ -207,7 +207,7 @@ The following is a step-by-step description of the copycheck process:
 8. The module finally prints a formatted version of the reference and sample documents that highlights matching sequences:
 
 ## Instructions 
-This code is meant to be run in a command terminal.
+This code is meant to be run in command terminal.
 
 1. Pull the code.
 2. Use chmod to be able to execute the program. 
@@ -221,10 +221,10 @@ chmod +x copycheck.py
 ***Enter the reference text. Ctrl-D (Mac) or Ctrl-Z (Windows) to save it.***
 ```
 4. Enter all requited inputs. The outputs highlight matching sequences. 
-![](sample.png)
+![](example1.png)
 
 5. Here is an example displaying optional color-coding for quoted matched. 
-![](quote_sample.png)
+![](example2.png)
 
 ## Roadmap
 There are three categories of improvement that should be implemented.

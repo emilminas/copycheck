@@ -358,7 +358,7 @@ if __name__ == "__main__":
             print(f'Quoted sequences are highlighted cyan.')
         print(f'\n\n{sample_out}')
 
-        print(f'\n\n*** The sample documents contains {word_count} words, '
+        print(f'\n\n*** The sample document contains {word_count} words, '
               f'which is {round(word_count / len(reference_in.split()) * 100, 2)}% of the reference.\n\n')
 
         print("\n\n***Press \'enter\' terminate or 'y' to go again.")
