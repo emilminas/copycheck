@@ -7,12 +7,12 @@ This module contains multiple functions that identify identical sequences of wor
 Method:
 1. Read in two inputs representing sample and reference documents,
 2. Assign a unique integer to each word (type, not token) and convert both texts into NumPy integer arrays,
-3. Get sliding frames across the arrays, comparing them, and convolving them to get matching sequences,
+3. Get sliding frames across the arrays, comparing them to get matching sequences,
 4. Format the input texts to highlight matching sequences.
 5. Optionally color code verbatim sequences that are quoted.
 ------
 Created by Emil Minas
-October 30, 2023
+January 22, 2024
 """
 import re
 import numpy as np
@@ -44,17 +44,14 @@ def process_text(text):
 
     Output
     ------
-    A formatted version of the input with spaced hyphens (including m- and n-dashes)
-    and normalized apostrophe and quotation marks.
+    A formatted version of the input with normalized apostrophe and quotation marks.
     """
-    return re.sub(r'(\w)([—–-])(\w)', '\g<1>\g<2> \g<3>',
-                  re.sub(r'(\w) ([—–-]) (\w)', '\g<1>\g<2> \g<3>',
-                         re.sub(r'[“”]', '\"',
-                                re.sub(r'[’‘]', '\'', text))))
 
+    return re.sub(r'[“”]', '\"',
+                  re.sub(r'[’‘]', '\'', text))
 
 def to_list(text):
-    """ Splits a given string by space char while preserving any newline, tab, etc.
+    """ Splits a given string by space or dash char while preserving any newline, tab, etc.
 
     Arguments
     ----------
@@ -62,11 +59,29 @@ def to_list(text):
 
     Output
     ------
-    A list of words split by whitespace, while preserving other formatting,
-    e.g. "\tHello world\n\n!" --> ['\t', 'Hello', 'world', '\n\n', '!']
+    A list of tokens split by whitespace or dash, while preserving other formatting,
+    e.g. "\tHello Earth-world\n\n!" --> ['\tHello ', 'Earth-', 'world\n\n!']
     """
-    words = re.split(' +|([\t\n\r\f\v]+)', text)      # Splits text.
-    return [word for word in words if word]           # Filters out None and empty elements.
+
+    tokens = [token for token in re.split('([\s—–-]+)', text) if token]  # Regex preserves tokens used to split text.
+    token_count = len(tokens)                                            # Get split token count.
+    paired = []                                                 # Initialize the output list of word & formatting pairs.
+
+    if token_count == 1:   # If the document is n=1, no further action is needed.
+        paired = tokens
+    elif token_count > 1:  # Otherwise, we must pair up formatting tokens with words,
+                           # E.g., ['\t', 'Hello', ' ', 'Earth-', 'world', '\n\n', '!'] - >
+                           # ['\tHello ', 'Earth-', 'world\n\n!']
+                           # This ensures that later on, we can strip or preserve the original formatting as needed.
+        for i in range(0, len(tokens), 2):
+            try:                                    # Anticipates error if the token count is odd.
+                paired.append(tokens[i] + tokens[i + 1])
+            except IndexError:                      # In this case, make sure there is no standalone formatting token.
+                if re.search('\w', tokens[-1]):
+                    paired.append(tokens[-1])
+                else:
+                    paired[-1] += tokens[-1]
+    return paired
 
 
 def get_color(color):
@@ -101,7 +116,7 @@ def get_color(color):
     return start, stop
 
 
-def highlight_text(masked_text, color):
+def highlight_text(mask, text, color):
     """ Finds and highlights match sequences within a given text.
 
      Arguments
@@ -113,23 +128,18 @@ def highlight_text(masked_text, color):
      ------
      A copy of the input highlighted for match sequences.
      """
+    padded = np.pad(mask, (1,), 'constant', constant_values=False)
+    starts = np.arange(len(padded) - 1)[~padded[:-1] & padded[1:]]      # Finds False to True index (start highlighting)
+    stops = np.arange(len(padded) - 1)[padded[:-1] & ~padded[1:]] - 1   # Finds True to False index (stop highlighting)
+
     start, stop = get_color(color)  # Controls the highlighter color start and stop commands.
-    return [f'{start}{token}{stop}' if target else token for token, target in masked_text]
 
+    for start_index in starts:      # Add background color text formatting to tokens at start sequences.
+        text[start_index] = f'{start}{text[start_index]}'
+    for stop_index in stops:        # Add background color stop  formatting to tokens at end sequences.
+        text[stop_index] = f'{text[stop_index]}{stop}'
 
-def smooth_highlights(highlighted_text):
-    """ Removes redundant formatting between highlighted and emboldened words. .
-
-     Arguments
-     ----------
-     highlighted_text   : input string with each match word highlights.
-
-     Output
-     ------
-     The same string with excessive formatting in between match words removed.
-     """
-    # Removes breaks in highlighting between words.
-    return re.sub(r'\033\[0m\s(\033\[\d\d;1m)', ' \g<1>', highlighted_text)
+    return text
 
 
 def search_arrays(reference_list, sample_list, frame_size_int):
@@ -197,12 +207,14 @@ def match_verbatim(reference, sample, frame_size):
     word2num = {}                                   # This dictionary will store the unique int value of each word type.
 
     for index, token in enumerate(reference):
-        word = re.sub(r'\W', '', token.lower())     # Gets the normalized form of each word.
+        # word = re.sub(r'\W', '', token.lower())     # Gets the normalized form of each word.
+        word = re.sub(r'[^\w\']', '', token.lower())
         word2num[word] = word2num.get(word, index)  # Populates a dict: each word key gets a unique integer.
         reference_nums.append(word2num[word])       # Populates a list of integers representing the reference input.
 
     for token in sample:
-        word = re.sub(r'\W', '', token.lower())     # Gets the normalized form of each word.
+        # word = re.sub(r'\W', '', token.lower())     # Gets the normalized form of each word.
+        word = re.sub(r'[^\w\']', '', token.lower())
         try:
             sample_nums.append(word2num[word])      # Populates a dict: each word key gets a unique integer.
         except KeyError:
@@ -231,18 +243,23 @@ def match_quotes(sample):
 
         # Creates a regex pattern that matches all tokens within or directly outside quotation marks.
         # For example: "Apples and oranges," (and also "bananas"). --matches--> ["Apples and oranges,"], ["bananas").]
-        quotation = '\S*?\"(.*?)\"\S*'
+        # quotation = ' \S*?\"(.*?)\"\S*'
+        quotation = '\S*?\"([^\"]*)\"\S*'
 
         # This lambda function uses the above pattern and regex substitution
-        # to replace each token in a match with the placeholder token "<quoted>"
+        # to replace each token in a match with the placeholder token "_quoted_"
         #  For example: "Apples and oranges," (and also "bananas"). --lambda-->
-        #               <quoted> <quoted> <quoted> (and also <quoted>
-        quotes_found = re.sub(quotation, lambda m: '<quoted> ' * len(to_list(m.group(1))), sample)
+        #               _quoted_ _quoted_ _quoted_ (and also _quoted_
+        quotes_found = re.sub(quotation, lambda m: '_quoted_ ' * len(to_list(m.group(1))), sample)
 
         # Returns a Boolean NumPy array that masks unquoted sequences.
         #  For example: "Apples and oranges," (and also "bananas"). --mask-->
         #               [True True True False False True]
-        return np.array(to_list(quotes_found)) == '<quoted>'
+        r = re.compile('_quoted_')
+        wordmatch = np.vectorize(lambda x: bool(r.search(x)))
+        return wordmatch(np.array(to_list(quotes_found)))
+        # return np.array(to_list(quotes_found)) == '_quoted_'
+        # return np.array(quotes_found.split()) == '_quoted_'
 
     else:
         # If there are an odd number of quotation marks, returns a mask that does not identify quotes.
@@ -265,7 +282,7 @@ def layer_masks(m, q):
     """
     mq = np.logical_and(m, q)                   # Uses logical "and" to identify intersection of match and quote.
     m_q = np.logical_and(m, np.logical_not(q))  # Uses logical "and" to identify intersection of match and NOT quote.
-
+    #  ValueError: operands could not be broadcast together with shapes (223,) (218,)
     return m_q, mq
 
 
@@ -298,7 +315,7 @@ def format_text(r_in, s_in, frame, get_quotes, reference_color, sample_color, qu
 
         # Imposes the mask array on the reference list to create an array of tuples
         # where each token is paired with a Boolean identifying it as a match or not; match tokens get color coded.
-        r_out = highlight_text(np.ma.masked_array(r_tokens, r_match_mask).toflex(), reference_color)
+        r_out = highlight_text(r_match_mask, r_tokens, reference_color)
 
         # Get Boolean mask identifying quotes sequences. If the User doesn't want to color code quotes, get dummy mask.
         quote_mask = match_quotes(sample) if get_quotes else np.full(s_match_mask.size, False)
@@ -306,14 +323,11 @@ def format_text(r_in, s_in, frame, get_quotes, reference_color, sample_color, qu
         # Using logical operands, combine masks to get (1) matches excluding quotes and (2) quotes matches.
         matches, quotes = layer_masks(s_match_mask, quote_mask)
 
-        s_out = highlight_text(np.ma.masked_array(s_tokens, quotes).toflex(), quote_color)  # highlight quoted matches
-        s_out = highlight_text(np.ma.masked_array(s_out, matches).toflex(), sample_color)  # highlight unquoted matches.
+        s_out = highlight_text(matches, s_tokens, sample_color)     # highlight unquoted matches.
+        s_out = highlight_text(quotes, s_out, quote_color)          # highlight quoted matches
 
-        # Joins the lists of tokens back into strings and uses regex substitution to remove redundant formatting.
-        return smooth_highlights(' '.join(r_out)), smooth_highlights(' '.join(s_out))
-
-    else:
-        # If no matches were found, do not format the text at all.
+        return ''.join(r_out), ''.join(s_out)  # Joins the lists of tokens back into strings.
+    else:  # If no matches were found, do not format the text at all.
         return None, None
 
 
