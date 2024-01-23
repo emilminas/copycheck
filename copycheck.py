@@ -129,8 +129,8 @@ def highlight_text(mask, text, color):
      A copy of the input highlighted for match sequences.
      """
     padded = np.pad(mask, (1,), 'constant', constant_values=False)
-    starts = np.arange(len(padded) - 1)[~padded[:-1] & padded[1:]]      # Finds False to True index (start highlighting)
-    stops = np.arange(len(padded) - 1)[padded[:-1] & ~padded[1:]] - 1   # Finds True to False index (stop highlighting)
+    starts = np.arange(len(padded) - 1)[~padded[:-1] & padded[1:]]    # Finds False to True indexes (start highlighting)
+    stops = np.arange(len(padded) - 1)[padded[:-1] & ~padded[1:]] - 1  # Finds True to False indexes (stop highlighting)
 
     start, stop = get_color(color)  # Controls the highlighter color start and stop commands.
 
@@ -207,14 +207,12 @@ def match_verbatim(reference, sample, frame_size):
     word2num = {}                                   # This dictionary will store the unique int value of each word type.
 
     for index, token in enumerate(reference):
-        # word = re.sub(r'\W', '', token.lower())     # Gets the normalized form of each word.
-        word = re.sub(r'[^\w\']', '', token.lower())
+        word = re.sub(r'[^\w\']', '', token.lower())     # Gets the normalized form of each word.
         word2num[word] = word2num.get(word, index)  # Populates a dict: each word key gets a unique integer.
         reference_nums.append(word2num[word])       # Populates a list of integers representing the reference input.
 
     for token in sample:
-        # word = re.sub(r'\W', '', token.lower())     # Gets the normalized form of each word.
-        word = re.sub(r'[^\w\']', '', token.lower())
+        word = re.sub(r'[^\w\']', '', token.lower())     # Gets the normalized form of each word.
         try:
             sample_nums.append(word2num[word])      # Populates a dict: each word key gets a unique integer.
         except KeyError:
@@ -282,7 +280,6 @@ def layer_masks(m, q):
     """
     mq = np.logical_and(m, q)                   # Uses logical "and" to identify intersection of match and quote.
     m_q = np.logical_and(m, np.logical_not(q))  # Uses logical "and" to identify intersection of match and NOT quote.
-    #  ValueError: operands could not be broadcast together with shapes (223,) (218,)
     return m_q, mq
 
 
