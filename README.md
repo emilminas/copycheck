@@ -2,14 +2,14 @@
 Copycheck is a module that identifies matching sequences of tokens between two strings. 
 
 ## Description
-This module was created to address the need to match a verbatim sequence of words that would constitute a copyright violation. 
+This module was created to address the need to match a verbatim sequence of words between two documents that would constitute a copyright violation. 
 Throughout the module, the original document is referred to as the *reference* and the document citing the reference as a source is called the *sample*. 
 Let's first assume that there is a minimum threshold for the length of a match sequence to constitute plagiarism or a copyright violation, e.g. >10 words. Let's call this the *frame size*. 
-In order to determine this manually, we would have to select words 0-10 from the sample and "control-F" it in the reference. 
+To determine this manually, we would have to select words 0-10 from the sample and "control-F" it in the reference. 
 We would then have to shift over one word, now selecting words 1-11, and perform the search again, continuing until we reach words n-11 to n. 
 Copycheck automates this operation by handling it as a pattern-matching problem -- similar to image recognition. 
 
-The main considerations in implementing such a pattern matcher was minimizing the:
+The main considerations in implementing such a pattern matcher were minimizing the:
 - number of libraries that would have to be imported, and
 - computational complexity of the operation.
   
@@ -19,8 +19,44 @@ Accepting the computational overhead of converting strings to NumPy integer arra
 ## Pipeline
 The following is a step-by-step description of the copycheck process:
 1. The reference and sample documents are read on-line as input strings and processed to normalize potential variations in punctuation.
-2. The strings are tokenized in a fashion that preserves formatting such as newline characters.
-3. Each unique word (type) is assigned an integer value in a dictionary, which is used to convert each string into an array of integers.
+   
+2. The strings are tokenized to preserve formatting such as newline characters.
+   1. Rather than using the traditional method of tokenizing a string based on whitespace, regex *split()* was used to demarcate tokens on all whitespace characters and dashes and preserve them.
+      ```python
+        import re
+        text = "\tHello Earth-world\n\n!"
+        toknized = re.split('([\s—–-]+)', text)
+    
+        >>> tokenized
+        ['\t', 'Hello', ' ', 'Earth-', 'world', '\n\n', '!']
+      ```
+   
+   2. Then a function is used to pair each non-word token with a word token such that each token contains one word. Let's call this function *paired*.
+      ```python
+        >>> paired(tokenized)
+        ['\tHello ', 'Earth-', 'world\n\n!']
+      ```
+    Let's combine these two steps into one function called *to_list()*. This style of tokenized text will help us split hyphenated words and dashes (the only punctuation that does not require space). Crucially, *to_list()* allows us to strip all non-word characters when pattern-matching while preserving the original formatting for reassembling the output, which will be a copy of the input with matching sequences highlighted. 
+
+3. Each unique word (type) is assigned an integer value using a dictionary to convert each string into an array of integers. Let's call this *word2num*. 
+    ```python
+    text = "World one:\tEarth\nWorld two:\tMars."
+    >>> print(text)
+    World one:  Earth
+    World two:  Mars.
+    
+    tokenized = to_list(text)
+    >>> tokenized
+    ['World ', 'one:\t', 'Earth\n', 'World ', 'two:\t', 'Mars.']
+    
+    normalized = [re.sub(r'[^\w\']', '', token.lower()) for token in tokenized]
+    >>> normalized
+    ['world', 'one', 'earth', 'world', 'two', 'mars']
+    
+    >>> word2num(normalized)
+    [0, 1, 2, 0, 4, 5]
+    ```
+
 4. The sample and reference arrays are restructured into overlapping sliding frames of indices. Suppose our 'document' is an array of the alphabet from 'a' to 'z'.
     ```python
     ['a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z']
@@ -51,7 +87,7 @@ The following is a step-by-step description of the copycheck process:
      [15 16 17 18 19 20 21 22 23 24 25]]
     ```
    
-   The document corresponding to the indices above become the following.
+   The document corresponding to the indices above becomes the following.
     ```python
     [['a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k']
      ['b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l']
@@ -81,10 +117,10 @@ The following is a step-by-step description of the copycheck process:
     - Note: any word that exists in the sample document, but not the reference document, will be arbitrarily assigned -1, since there is no chance for it to be in a match sequence.
     
     ```python
-    >>> word2num(reference.split())
+    >>> word2num(to_list(reference))
     [0, 1, 2, 3, 4]
    
-    >>> word2num(sample.split())
+    >>> word2num(to_list(sample))
     [-1, -1, 0, 1]
     ```
 
@@ -209,8 +245,8 @@ The following is a step-by-step description of the copycheck process:
    As you can see, each mask evaluates True in the postion of the sequence "the fog".
 
 6. These masks are imposed on the original tokenized documents and color-coded (formatted to change the background color of the text) if a token is paired with True.
-7. Matches that are in quotation marks are optionally color-coded.
-8. The module finally prints a formatted version of the reference and sample documents that highlights matching sequences:
+8. Matches that are in quotation marks are optionally color-coded.
+9. The module finally prints a formatted version of the reference and sample documents that highlights matching sequences:
 
 ## Instructions 
 This code is meant to be run in command terminal.
@@ -242,14 +278,3 @@ There are three categories of improvement that should be implemented.
 ## Final thoughts
 I welcome any suggestions on how to improve this code. I welcome pull requests. For major changes or any use of my code for other purposes, please open an issue or contact me. 
   
-
-
-
-
-
-
-
-
-
-
-
